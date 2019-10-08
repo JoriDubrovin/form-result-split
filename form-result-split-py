@@ -1,0 +1,60 @@
+#!/usr/bin/python3
+
+"""
+Usage: python3 form-result-split.py <infile.csv> <outfile.csv>
+
+Makes a copy of a CSV file where the contents of each cell is terminated
+at the first ; character.  New rows are added that contain the parts
+after the ; characters.
+
+Example input file:
+"1","x;w"
+"2;1;2","y"
+"3","z"
+
+output file:
+"1","x"
+"2","y"
+"3","z"
+"1","w"
+"2",""
+"""
+
+import csv
+import sys
+
+DATA_SEPARATOR = ';'
+
+basic_rows = []
+extra_columns = []
+with open(sys.argv[1], 'r', newline='') as csv_file_in:
+    for row in csv.reader(csv_file_in):
+        while len(extra_columns) < len(row):
+            extra_columns.append([])
+        basic_row = []
+        for (column_index, cell) in enumerate(row):
+            parts = cell.split(DATA_SEPARATOR)
+            if not parts:
+                parts = ['']
+            basic_row.append(parts[0])
+            extra_columns[column_index].extend(parts[1:])
+        basic_rows.append(basic_row)
+
+with open(sys.argv[2], 'w', newline='') as csv_file_out:
+    writer = csv.writer(csv_file_out, quoting=csv.QUOTE_ALL)
+    for row in basic_rows:
+        writer.writerow(row)
+    extra_row_index = 0
+    while True:
+        has_data = False
+        row = []
+        for column in extra_columns:
+            if len(column) > extra_row_index:
+                row.append(column[extra_row_index])
+                has_data = True
+            else:
+                row.append('')
+        if not has_data:
+            break
+        writer.writerow(row)
+        extra_row_index += 1
